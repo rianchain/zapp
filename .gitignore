@@ -1,0 +1,23 @@
+# Mengabaikan file .env
+.env
+
+# Mengabaikan file log
+*.log
+
+# Mengabaikan direktori node_modules
+node_modules/
+
+# Mengabaikan file sementara
+*.tmp
+
+# Mengabaikan file konfigurasi lokal
+config/local.json
+
+# Mengabaikan file yang dihasilkan oleh sistem operasi
+.DS_Store
+Thumbs.db
+
+# Mengabaikan file yang dihasilkan oleh IDE
+.idea/
+*.sublime-workspace
+*.sublime-project
