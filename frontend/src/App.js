@@ -1,19 +1,20 @@
 import logo from "./logo.svg";
 import "./App.css";
-import axios from "axios";
+import { useState } from "react";
+import WalletInputs from "./components/WalletInputs";
 
 function App() {
-  async function backendCall() {
-    const response = await axios.get(
-      "http://localhost:8080/nativeBalance?address=0x6482f9C2E181F21Ebafc6f7070462BFdBf34C50B&chain=0xaa36a7"
-    );
-
-    console.log("your API balance is:", response.data);
-  }
+  const [wallet, setWallet] = useState("");
+  const [chain, setChain] = useState("0x1");
 
   return (
     <div className="App">
-      <button onClick={backendCall}>Fetch Hello</button>
+      <WalletInputs
+        chain={chain}
+        setChain={setChain}
+        wallet={wallet}
+        setWallet={setWallet}
+      />
     </div>
   );
 }
