@@ -1,23 +1,19 @@
-import logo from './logo.svg';
-import './App.css';
+import logo from "./logo.svg";
+import "./App.css";
+import axios from "axios";
 
 function App() {
+  async function backendCall() {
+    const response = await axios.get(
+      "http://localhost:8080/nativeBalance?address=0x6482f9C2E181F21Ebafc6f7070462BFdBf34C50B&chain=0xaa36a7"
+    );
+
+    console.log("your API balance is:", response.data);
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <button onClick={backendCall}>Fetch Hello</button>
     </div>
   );
 }
