@@ -117,3 +117,64 @@ app.get("/nativeBalance", async (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
+app.get("/tokenBalances", async (req, res) => {
+  try {
+    const { address, chain } = req.query;
+
+    console.log("Request params untuk token balances:", { address, chain });
+
+    if (!address || !chain) {
+      throw new Error("Address dan chain harus disediakan");
+    }
+
+    const chainHex = chain.toLowerCase();
+    if (!chainHex.startsWith("0x")) {
+      throw new Error("Chain ID harus dalam format hex (contoh: 0x1)");
+    }
+
+    const response = await Moralis.EvmApi.token.getWalletTokenBalances({
+      address: address,
+      chain: chainHex,
+    });
+
+    console.log("Token balances response:", response.raw);
+
+    // Transformasi data token untuk memudahkan pembacaan
+    const tokens = response.raw.map((token) => ({
+      token_address: token.token_address,
+      name: token.name,
+      symbol: token.symbol,
+      balance: token.balance,
+      decimals: token.decimals,
+      balanceFormatted: (
+        Number(token.balance) / Math.pow(10, token.decimals)
+      ).toFixed(6),
+    }));
+
+    console.log("Processed tokens:", tokens);
+
+    // Kirim response dengan format yang lebih informatif
+    res.json({
+      status: "success",
+      chain: chainHex,
+      wallet: address,
+      tokens: tokens.length > 0 ? tokens : [],
+      message:
+        tokens.length > 0
+          ? `Ditemukan ${tokens.length} token`
+          : "Tidak ada token yang ditemukan",
+    });
+  } catch (error) {
+    console.error("Error dalam getTokenBalances:", error);
+
+    // Kirim error response yang lebih informatif
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+      details: error.details || "No additional details",
+      chain: req.query.chain,
+      wallet: req.query.address,
+    });
+  }
+});
