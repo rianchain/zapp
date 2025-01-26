@@ -41,51 +41,72 @@ app.get("/nativeBalance", async (req, res) => {
     const nativeBalance = response.result;
     console.log("Balance received:", nativeBalance);
 
-    let nativeCurrency;
-    let nativePrice;
-
     try {
-      if (chainHex === "0x1") {
-        nativeCurrency = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH
-      } else if (chainHex === "0x89") {
-        nativeCurrency = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"; // WMATIC
-      } else {
-        throw new Error("Chain tidak didukung");
+      // Mapping untuk mendapatkan harga referensi dari mainnet
+      let priceReferenceChain = "0x1"; // Default ke ETH mainnet
+      let nativeCurrency = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // Default WETH
+
+      // Tentukan chain referensi dan token berdasarkan chain yang dipilih
+      switch (chainHex) {
+        case "0x1": // ETH Mainnet
+        case "0xaa36a7": // Sepolia (menggunakan harga ETH)
+        case "0x6f3": // OP Sepolia (menggunakan harga ETH)
+          priceReferenceChain = "0x1";
+          nativeCurrency = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH
+          break;
+        case "0x89": // Polygon Mainnet
+        case "0x133": // Polygon Amoy
+          priceReferenceChain = "0x89";
+          nativeCurrency = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"; // WMATIC
+          break;
+        default:
+          throw new Error(`Chain ${chainHex} tidak didukung`);
       }
 
-      console.log("Mencoba mendapatkan harga untuk token:", nativeCurrency);
-
-      nativePrice = await Moralis.EvmApi.token.getTokenPrice({
-        address: nativeCurrency,
-        chain: chainHex,
+      console.log("Mengambil harga referensi dari:", {
+        chain: priceReferenceChain,
+        token: nativeCurrency,
       });
 
-      console.log(
-        "Response harga token lengkap:",
-        JSON.stringify(nativePrice, null, 2)
-      );
+      const nativePrice = await Moralis.EvmApi.token.getTokenPrice({
+        address: nativeCurrency,
+        chain: priceReferenceChain,
+      });
 
-      // Akses properti usdPrice yang benar dari response
-      const usdPrice =
-        nativePrice.raw?.usdPrice || nativePrice.result?.usdPrice;
+      const priceData = nativePrice.toJSON();
+      console.log("Price data JSON:", priceData);
 
-      const result = {
+      const usdPrice = priceData.usdPrice;
+      console.log("Final USD price:", usdPrice);
+
+      // Tambahkan informasi testnet jika bukan mainnet
+      const isTestnet = !["0x1", "0x89"].includes(chainHex);
+
+      res.json({
         balance: nativeBalance.balance,
         usd: usdPrice,
-      };
-
-      res.json(result);
+        chainId: chainHex,
+        tokenAddress: nativeCurrency,
+        isTestnet: isTestnet,
+        priceReference: isTestnet
+          ? `Harga dari ${priceReferenceChain}`
+          : "Native price",
+      });
     } catch (priceError) {
-      console.error("Error saat mengambil harga:", priceError);
+      console.error("Error detail saat mengambil harga:", {
+        message: priceError.message,
+        stack: priceError.stack,
+      });
+
       res.json({
         balance: nativeBalance.balance,
         usd: null,
-        message: "Tidak dapat mengambil harga token",
+        chainId: chainHex,
         error: priceError.message,
       });
     }
   } catch (e) {
-    console.error("Error in /nativeBalance:", e);
+    console.error("Error utama:", e);
     res.status(500).json({
       error: e.message,
       details: e.details || "No additional details",
